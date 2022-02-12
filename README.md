@@ -79,3 +79,7 @@ To remove all volumes (completely erase docker data)
 ```
 docker system prune -a --volumes
 ```
+
+TODO: Investigate 
+
+https://techwithcloud.com/2021/06/02/rabbitmq-monitoring-using-prometheus-grafana/
