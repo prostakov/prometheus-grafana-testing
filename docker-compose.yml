@@ -1,0 +1,62 @@
+version: '2.2'
+
+networks:
+    monitor-net:
+      driver: bridge
+
+volumes:
+    prometheus_storage: {}
+    grafana_storage: {}
+
+services:
+
+    prometheus:
+        image: prom/prometheus:v2.28.0
+        container_name: prometheus
+        volumes:
+          - ./prometheus:/etc/prometheus
+          - prometheus_storage:/prometheus
+        command:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--storage.tsdb.retention.time=200h'
+          - '--web.enable-lifecycle'
+        restart: unless-stopped
+        ports:
+          - 9090:9090
+        networks:
+          - monitor-net
+
+    grafana:
+        image: grafana/grafana:7.5.7
+        container_name: grafana
+        volumes:
+          - grafana_storage:/var/lib/grafana
+          - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/default.yaml
+          - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/default.yaml
+          - ./grafana/dashboards:/var/lib/grafana/dashboards
+        environment:
+          - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+          - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+          - GF_USERS_ALLOW_SIGN_UP=false
+        restart: unless-stopped
+        ports:
+            - 3000:3000
+        networks:
+          - monitor-net
+
+    node_exporter:
+        image: prom/node-exporter:v1.3.1
+        container_name: prometheus-node-exporter
+        volumes:
+          - "/:/host:ro"
+        command:
+          - "--path.rootfs=/host"
+        restart: unless-stopped
+        ports:
+          - 9100:9100
+        networks:
+          - monitor-net
+        pid: host
